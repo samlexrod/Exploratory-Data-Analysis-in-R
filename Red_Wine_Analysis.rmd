@@ -1,0 +1,798 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+The Red Wine Journey by Samuel Rodriguez
+========================================================
+  
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk. This
+# prevents the code from displaying in the knitted HTML output. You should set
+# echo=FALSE for all code chunks in your file, unless it makes sense for your
+# report to show the code that generated a particular plot.
+
+# The other parameters for "message" and "warning" should also be set to FALSE
+# for other code chunks once you have verified that each plot comes out as you
+# want it to. This will clean up the flow of your report.
+
+#install.packages("ggplot2")
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(GGally)
+library(pastecs)
+library(memisc)
+library(gridExtra)
+library(Hmisc)
+```
+
+```{r include=FALSE, Load_the_Data}
+# Load the Data
+list.files()
+
+wqr <- read.csv("wineQualityReds.csv")
+```
+
+
+> Selecting the best red wine is a tricky one. There are many variables that can make the quality of a red wine the best or the worst. 
+
+> This analysis is designed to explore the factors that contribute to a bad or good red wine. The dataset includes only physicochemical variables to predict the sensory output. The sensory output is the quality of a red wine measured subjectively by at least 3 wine experts with a rating from 0 (very bad) to 10 (very excellent). 
+
+> The purpose is to create a model that can differentiate a good red wine from a bad red wine using attribute information within the data provided. Let's start exploring!
+
+
+# Univariate Plots Section
+
+**Variables Available**
+```{r echo=FALSE, variable_list}
+names(wqr)
+```
+
+```{r include=FALSE, histogram_box_function}
+# function for repeated plots under this section
+boxgram_grid <- function(data_set, variable_name, bin_width, var_name) {
+title_name = paste(var_name, "Histogram")
+p1 <- ggplot(aes(variable_name), data =  data_set) +
+  geom_histogram(binwidth = bin_width, color = "Black", fill = I("#800020")) + 
+  ggtitle(title_name) +
+  xlab(var_name)
+
+p2 <- ggplot(aes(x = "Jittered Values", y = variable_name), data = data_set) +
+  geom_jitter(alpha = 0.1) +
+  geom_boxplot(alpha = 0.2, color = I("#800020")) +
+  ggtitle("Box Plot") +
+  ylab(var_name) +
+  stat_summary(fun.y = "mean",
+               geom = "point",
+               color = "blue",
+               shape = 20,
+               size = 3)
+
+grid.arrange(p1, p2, ncol=2)
+}
+```
+
+```{r include=FALSE, outlier_function}
+out_message <- function(variable){
+  # Outlier target
+  target <- round(mean(variable) + sd(variable) * 3, 2)
+  message(paste("Values greater than or equal to", 
+              target, "are outliers."))
+  
+  # Outlier Count
+  outlier_count <- length(subset(variable, variable >= target))
+  message(paste("There are", outlier_count, "outliers in this variable."))
+}
+```
+
+```{r univariate_summary, include=FALSE}
+univar_summary <- function(data_set, variable){
+  options(scipen=0)
+  options(digits = 8)
+  variable <- eval(substitute(variable), data_set)
+  data_set <- data.frame(variable)
+  
+
+  print(summary(data_set$variable))
+  out_message(data_set$variable)
+  message("The statistics after outlier removal are shown below:")
+  print(summary(subset(data_set, select = variable, 
+                variable < mean(variable) + sd(variable) * 3)$variable))
+}
+```
+
+---
+
+### Alcohol
+
+**Histogram & Box Plot**
+
+```{r echo=FALSE, Univariate_AlcoholPlot}
+boxgram_grid(wqr, wqr$alcohol, 0.5, "Alcohol % by Volume")
+```
+
+**Data Summary**
+```{r echo=FALSE, alcohol_summary}
+univar_summary(wqr, alcohol)
+```
+
+**Description**
+
+> In the above grid, we see the distribution of alcohol % by volume of red wines sampled. In the box plot, we can appreciate the distribution more closely.
+
+> We can observe a more dense area around 9.5 and some outliers with higher alcohol % by volume. There is a long stretch on the top 25 percentile, which indicates that there is more alcohol % by volume variability between 11.1 and 14.9. We also noticed that there are 8 red wines with alcohol levels higher or equal to than 13.62. These values are very unlikely to happen.
+
+---
+
+### Volatile Acidity
+
+**Histogram & Box Plot**
+
+```{r echo=FALSE, Univariate_volacidity_Plot}
+boxgram_grid(wqr, wqr$volatile.acidity, 0.1, "Volatile Acidity")
+```
+
+**Data Summary**
+```{r echo=FALSE, volatile_acidity_summary}
+univar_summary(wqr, volatile.acidity)
+```
+
+**Description**
+
+> In the above grid, we see the distribution of volatile acidity of red wines sampled.
+
+> We can observe a more spread density around the inner quartile range and less of a stretch on the top 25 percentile than what we observed with alcohol % by volume. Here we also found that there are many outliers with volatile acidity greater than or equal to 1.06. 
+
+---
+
+### Sulphates
+
+**Histogram & Box Plot**
+
+```{r echo=FALSE, Univariate_sulphates_Plot}
+boxgram_grid(wqr, wqr$sulphates, 0.1, "Sulphates")
+```
+
+**Data Summary**
+```{r echo=FALSE, sulphates_summary}
+univar_summary(wqr, sulphates)
+```
+
+**Description**
+
+> In the above grid, we see the distribution of sulphates of red wines sampled.
+
+> Contrary to volatile acidity and similar to alcohol % by volume, the sulphate content of red wines sampled have 27 outliers--19 more than alcohol % by volume. However, compared to alcohol % by volume, we can observe a more narrow distribution at lower levels of sulphates. This indicates that many red wines have low levels of sulphates while higher levels of sulphates are not very likely.
+
+---
+
+### Citric Acid
+
+**Histogram & Box Plot**
+
+```{r echo=FALSE, Univariate_citric_acid_Plot}
+boxgram_grid(wqr, wqr$citric.acid, 0.05, "Citric Acid")
+```
+
+**Data Summary**
+```{r echo=FALSE, citric_acid_summary}
+univar_summary(wqr, citric.acid)
+```
+
+**Description**
+
+> In the above grid, we see the distribution of Citric Acid of red wines sampled.
+
+> This distribution seems to be scattered more normal with the exeption of high density in the lower quartile and an outlier in the top quartile.
+
+---
+
+### Quality
+
+**Bar Plot**
+
+```{r echo=FALSE, Univariate_QualityPlot}
+# Discrete data
+ggplot(aes(quality), data =  wqr) +
+  geom_bar(width = 1, color = "Black", fill = I("#800020")) +
+  scale_x_continuous(breaks = seq(3, 9, 1)) + 
+  ggtitle("Quality of Red Wine - Scale form 0 to 10") +
+  xlab("Quality Rating") + ylab("Number of Ratings")
+```
+
+**Data Summary**
+```{r echo=FALSE, quality_summary}
+describe(wqr$quality)
+```
+
+**Description**
+
+> In the above bar chart, we see the quantity per quality rating on a scale from 0 to 10. Missing bars indicate 0 ratings.
+
+> We can see that at least 3 wine experts mostly found within the sample that most of red wines have a quality of 5 with a proportion of 42.6%. 
+
+---
+
+---
+
+# Univariate Analysis
+
+# Main Features Investigated:
+
+### Observation of Sampled Red Wine Quality Distribution
+> The probability distribution of the quality rating of the sampled red wines is binomial. Most wines in the distribution have a quality output of around 5 of a scale from 0 to 10. Thus, for a big selection of red wines, if we randomly chose a wine, we are most likely to get one with a quality of 5 out of 10 in the eyes of wine experts--quality will variate subjectively depending on the grader.
+
+### Observation of Continuous Distributions about Sampled Red Wine Variables
+
+> The alcohol % volume is not quite normal but robust. The average red wine has around 10.42% (10.40% after outlier removal) of alcohol by volume. So we are most likely to get a random bottle of red wine that contains around that volume. The same we can say about volatile acidity, sulphates, and citric acid; we are most likely to get a random bottle of red wine that contains around the mean values.
+
+> However, I am more interested to know what quality I am most likely to get when I choose a bottle of red wine with 10.40% of alcohol by volume and/or any other physicochemical factor. People like me do not go and randomly select a bottle of red wine--maybe I do sometimes to try something new.
+
+---
+
+### Grid of Histograms of Alcohol % by Volume
+```{r echo=FALSE, histogram_grid_alcohol}
+ggplot(aes(alcohol), data = wqr) +
+  geom_histogram(binwidth = .4, color = "Black", fill = I("#800020")) + 
+  facet_wrap(~quality, scales = "free") +
+  ggtitle("Alcohol % by Volume Distributions by Quality")
+```
+
+> We see that there is a fairly uniform distribution for quality rank 8, which tells me that alcohol % by volume for a red wine of this rate is not too much of a driver of quality. Moreover, there is a normal distribution for quality rank 7, and a robust normal distribution for quality rank 7. Quality ranks 5 and 4 are skewed to the right. And quality rank 3 is fairly skewed to the left. The big question is "How impactful overall is the alcohol % by volume on quality?" We are continuing a bivariate analysis of these two variables next.
+
+---
+
+---
+
+# Bivariate Plots Section
+
+### Qualit vs. Alcohol Scatterplot Unjittered
+```{r echo=FALSE, Bivariate_quality_alcohol}
+ggplot(aes(x = alcohol, y = quality), data = wqr) + 
+  geom_point(alpha = 1/4,
+             color = I("#800020"), fill = I("Black"), size = 2) + 
+  stat_smooth(method = "lm", color = "Black") + 
+  ggtitle("Quality Rank vs. Alcohol % by Volume")
+```
+
+**Description**
+
+> The scatterplot above show us the relationship between quality and alcohol % by volume. 
+
+> Since the ouput (y) is a discrete interval level of measurement, we can see overplotting in it. And as there is modedrate to wide ranges of alcohol % by volume variability per quality, we can see categorical lines on the cartesian plane. To observe the values better, we are jittering the scatterplot.
+
+---
+
+### Quality vs. Alcohol Scatterplot Jittered
+
+```{r echo=FALSE, Bivariate_quality_alcohol_jit}
+ggplot(aes(x = alcohol, y = quality), data = wqr) + 
+  geom_point(alpha = 1/4, position = position_jitter(), 
+             color = I("#800020"), fill = I("Black"), size = 2) + 
+  stat_smooth(method = "lm", color = "Black") + 
+  ggtitle("Jittered Quality Rank vs. Alcohol % by Volume")
+```
+
+**Description**
+
+> The above scatterplot show us the same relation but jittered allowing us to appreciate the relationshipt closer. Darker colors indicate more density in the relationship. 
+
+> We can see that there is more overploting in the rating 5 with about 9 to 10 alcohol % by volume. This plot includes the outliers previously mentioned in the alcohol variable. We can see the positive relationship wich seem to be moderate to me. We check to coefficient of correlation next.
+
+---
+
+### Correlation
+```{r correlation, echo=FALSE}
+cor.test(wqr$alcohol, wqr$quality)
+
+```
+
+**Correlation Findings**
+
+> We can see that the correlation between quality and alcohol is moderate, with a 0.48 coefficient of correlation. If the wine experts were more consistent with their quality ratings and the content of alcohol, this value would be higher. By consistent, I mean that at high levels of alcohol they would grade the red wine as high and at low levels of alcohol, the quality of red wine low. However, we can tell by the scatterplot that that was not the case here. there is a wide distribution of alcohol % by volume on each quality rating, which will make the prediction of quality more complicated.
+
+---
+
+### Model Statistics Description
+```{r model_description, echo=FALSE}
+m1 <- lm(quality ~ alcohol, data = wqr)
+
+summary.lm(m1)
+```
+
+**Regression Findings**
+
+> Here we can see that the model is valid since the probability that there is no relationship (p-value) is 0. However, the model does not fit perfectly as I presumed. The coefficient of determination is 0.23 when a perfect fit in the regression is 1. The other .77 needs to be determined by other factors. We check those factors next.
+
+---
+
+---
+
+# Bivariate Analysis
+> One thing to notice is that most of the relationship is around 9 to 10 % alcohol by volume as we see in the darkest circles in the jittered plot above.
+
+> According to the above scatterplots, the model does not look as strong as I assumed it would be as there is a wide distribution of alcohol % by volume on each quality rating. 
+
+> The f-value is significantly high and the p-value is 0. So we can conclude that the relationship between alcohol and quality is significant within a .01 significance level. This means that there is not enough evidence to say that the slope of the line can be zero and no relationship between the two above variables is possible. This makes the model is valid.
+
+>As we see by looking at the graph and by the correlation coefficient (0.48), we have a moderate positive relationship.
+
+>However by looking at the coefficient of determination (.227), we can say that the only 22.7% of the variability in quality can be explained by alcohol % by volume only. As we mentioned, the rest of the variability is due to other factors. On this section, we will introduce new factors into the model to attempt to increase the percentage of variability in quality that can be explained by the new multivariate model.
+
+---
+
+# Identifying Other Bivariate Factors
+
+### All Relationships in the Dataset with Focus on Quality
+
+```{r allrelation_quality1, echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(20022012)
+wqr_samp <- subset(wqr[sample(1:length(wqr$quality), 1000), ], select = -X)
+
+col_index <- function(data_set, column_name){
+  match(column_name, names(data_set))
+}
+
+ggpairs(wqr_samp, columns = c(col_index(wqr_samp, "fixed.acidity"), 
+                              col_index(wqr_samp, "pH"), 
+                              col_index(wqr_samp, "residual.sugar"), 
+                              col_index(wqr_samp, "quality")),
+        lower = list(continuous = wrap("points", shape = I('.'))),
+        upper = list(combo = wrap("box", outlier.shape = I('.'))))
+```
+
+> On the above grid, there is no substantial correlation with quality.
+
+```{r allrelation_quality2, echo=FALSE, warning=FALSE, message=FALSE}
+
+ggpairs(wqr_samp, columns = c(col_index(wqr_samp, "chlorides"), 
+                              col_index(wqr_samp, "free.sulfur.dioxide"), 
+                              col_index(wqr_samp, "total.sulfur.dioxide"), 
+                              col_index(wqr_samp, "density"), 
+                              col_index(wqr_samp, "quality")),
+        lower = list(continuous = wrap("points", shape = I('.'))),
+        upper = list(combo = wrap("box", outlier.shape = I('.'))))
+```
+
+> On the above grid, there is not substantial correlation with quality.
+
+```{r allrelation_quality3, echo=FALSE, warning=FALSE, message=FALSE}
+
+ggpairs(wqr_samp, columns = c(col_index(wqr_samp, "volatile.acidity"),
+                              col_index(wqr_samp, "sulphates"),
+                              col_index(wqr_samp, "citric.acid"),
+                              col_index(wqr_samp, "alcohol"),
+                              col_index(wqr_samp, "quality")),
+        lower = list(continuous = wrap("points", shape = I('.'))),
+        upper = list(combo = wrap("box", outlier.shape = I('.'))))
+```
+
+> On the above grid, there is a substantial correlation with quality. We have alcohol with 0.436 and volatile acidity with -0.37. And there are two more slightly less substantial correlations with quality such as sulphates with 0.207 and citric acid with 0.202. 
+
+**Findings On Additional Factors**
+
+> It seems there is no other significant correlation greater than alcohol and quality. The only closest significant correlation of quality is volatile acidity with a negative correlation of 0.37. We would like to add this variable to the model because the correlation with alcohol is not strong. 
+
+>The model could be stronger if we add sulphates and citric acid. But the issue with using a combination of sulphates and citric acid is that the two independent variables are substantially correlated with each other, which will bring the same meaning to the model and increase the coefficient of determination. 
+
+> For the model, we are using sulphates since is slightly more correlated to quality than citric acid.
+
+---
+
+## Additional Bivariate Exploration on Promissing Variables
+
+```{r include=FALSE, bivariate_function}
+plot_box_jit <- function(data_set, 
+                         x_var, x_name, 
+                         y_var, y_name, 
+                         clean_out){
+  # Setting variables
+  x_var <- eval(substitute(x_var), data_set)
+  y_var <- eval(substitute(y_var), data_set)
+  data_set.in <- data.frame(y_var, x_var)
+  
+  if (clean_out) {
+  #OUTLIER DETECTION
+  clean_message <- "- No Overall Outliers"
+    
+  x_var.above_out <- with(data_set.in, mean(x_var) + sd(x_var) * 3)
+  x_var.below_out <- with(data_set.in, mean(x_var) - sd(x_var) * 3)
+  
+  y_var.above_out <- with(data_set.in, mean(y_var) + sd(y_var) * 3)
+  y_var.below_out <- with(data_set.in, mean(y_var) - sd(y_var) * 3)
+  
+  data_set.in <- subset(data_set.in, 
+                        (x_var > x_var.below_out & x_var < x_var.above_out) & 
+                          (y_var > y_var.below_out & y_var < y_var.above_out))
+  } else {clean_message = ""}
+  
+  # Creating the box plot
+  ggplot(aes(x = factor(x_var), y = y_var), data = data_set.in) +
+    geom_jitter(alpha = 0.3) +
+    geom_boxplot(alpha = .5, color = I("#800020")) +
+    stat_summary(fun.y = "mean",
+                 geom = "point",
+                 color = "blue",
+                 shape = 20,
+                 size = 2) +
+    ggtitle(paste(y_name, "on", x_name, "Segments", clean_message)) +
+    xlab(paste("Factor of", x_name)) + 
+    ylab(y_name)
+}
+```
+
+---
+
+**Alcohol/Quality Box Plot**
+
+```{r echo=FALSE, Bivariate_QualityAlcoholBox}
+plot_box_jit(wqr, quality, "Quality", alcohol, "Alcohol % by Volume", FALSE)
+```
+
+
+**Description**
+
+> In the above jittered box plot, we see the distribution of alcohol % by volume per quality rating on a scale from 0 to 10. Missing quality ratings indicate no rating.
+
+> Here we can observe the alcohol distribution per quality rating closely and separately. We noticed before that the alcohol distribution was most dense around 9.5. We can clearly see here that the density around this area is mostly for red wines with a quality rating of 5. Also, most of the red wines have qualities of 5 and 6 as the density shows and there is more alcohol content for higher qualities of red wines. We can observe outliers on ratings 5 and 6, as well. 
+
+> Here we can clearly see why the correlation between alcohol and quality is not that strong as each box plot shows a fairly wide distribution with the exception of quality 3. However, this quality rating seems to have too few cases of red wine ratings.
+
+---
+
+**Volatile Acidity/Quality Box Plot**
+
+```{r echo=FALSE, Univariate_QualityVolatilityBox}
+plot_box_jit(wqr, quality, "Quality", volatile.acidity, "Volatile Acidity", FALSE)
+```
+
+**Description**
+
+> In the above jittered box plot, we see the distribution of volatile acidity per quality rating on a scale from 0 to 10.
+
+> Here we can observe that volatile acidity is mostly dense on red wine qualities 5 and 6 as with alcohol % by volume; but contrary to it, there is lower volatile acidity for higher quality red wines. Also, we can observe outliers almost across all the qualities except for quality 4. These outliers should be investigated in correlation with other factors and why they are there before removal.
+
+> We can clearly see that there is also wide distributions of volatile acidity within quality ratings, and there are too few cases in quality 3 and 8.
+
+---
+
+**Sulphates/Quality Box Plot**
+
+```{r echo=FALSE, Univariate_QualitySulphatesBox}
+plot_box_jit(wqr, quality, "Quality", sulphates, "Sulphates", FALSE)
+```
+
+**Description**
+
+> In the above jittered box plot, we see the distribution of sulphates per quality rating on a scale from 0 to 10.
+
+> Here we can observe a slightly upward trend as the quality increases and also a high density in quality 5 and 6. For sulphates, there is outlier activity in every quality rating mostly in 5 and 6. They should also be investigated.
+
+> We also notice here less wide distribution within sulphates and quality ratings except for those with huge outliers, and there are also too few cases in quality rating 3 and 8.
+
+
+### Continuation of Bivariate Analysis
+
+> With the additional exploration, we have seen that the distributions of the other factors are not tightly fit to quality rating. This gives me to assume that the variability of the quality is mostly subjective to the wine expert reactions to these ingredients. The variables explored above where the most correlated with quality rating, so the other variables are even less of a qualifier of a good or bad red wine. Perhaps there are other unavailable variables that we are missing that can explain these wide distributions within quality ratings. We are going to explore further with more variables to determine if that is the case.
+
+---
+
+---
+
+# Multivariate Plots Section
+
+> Since there are overall outliers affecting our analysis, any value greater than 3 standard deviations from the respective average will be omitted in the rest of the analysis. 
+
+> The prhase "overall outliers" represent the outliers of the whole distribution of a particular variable, which is not segmented by other variable.
+
+
+```{r include=FALSE, scat_boxplot_function}
+scat_boxplot_grid <- function(data_set, qual_var, qual_name,
+                              quant_var, quant_name,
+                              bucket_var, bucket_name, clean_out){
+  
+  # Setting variables
+  qual_var <- eval(substitute(qual_var), data_set)
+  quant_var <- eval(substitute(quant_var), data_set)
+  bucket_var <- eval(substitute(bucket_var), data_set)
+  
+  # Creating new set to allow subsetting
+  data_set.in <- data.frame(qual_var, quant_var, bucket_var)
+  
+  if (clean_out) {
+  cleaned_message <- "- No Overall Outliers"  
+  
+  #OUTLIER DETECTION
+  quant.above_out <- with(data_set.in, mean(quant_var) + sd(quant_var) * 3)
+  quant.below_out <- with(data_set.in, mean(quant_var) - sd(quant_var) * 3)
+  
+  buck.above_out <- with(data_set.in, mean(bucket_var) + sd(bucket_var) * 3)
+  buck.below_out <- with(data_set.in, mean(bucket_var) - sd(bucket_var) * 3)
+  
+  data_set.in <- subset(data_set.in, 
+                        (quant_var > quant.below_out & quant_var < quant.above_out) & 
+                          (bucket_var > buck.below_out & bucket_var < buck.above_out))
+  } else {cleaned_message = ""}
+  
+  # Creating the scatterplot
+  p1 <- ggplot(aes(x = bucket_var, y = qual_var, color = quant_var), 
+               data = data_set.in) + 
+  geom_point(position = position_jitter(height = 5),
+             size = 1) + 
+  stat_smooth(method = "lm", color = "Black") + 
+  ggtitle(paste("Scatter Plot and Box Plot of", qual_name, 
+                "vs \n", bucket_name, "and", quant_name, cleaned_message)) +
+    guides(color = guide_legend(title = quant_name, reverse = TRUE)) +
+    xlab(bucket_name) + 
+    ylab(paste("Jittered", qual_name))
+  
+  # Creating buckets for box plot on quartiles
+  data_set.in$alcohol.bucket = with(data_set.in, 
+                                    cut(bucket_var, c(quantile(bucket_var, 0) - .00001,
+                                quantile(bucket_var, .25), 
+                                quantile(bucket_var, .50),
+                                quantile(bucket_var, .75),
+                                quantile(bucket_var, 1))))
+  
+  # Creating the box plot
+  p2 <- ggplot(aes(x = factor(qual_var), y = quant_var), 
+               data = data_set.in) +
+    geom_boxplot(aes(fill = alcohol.bucket)) +
+    scale_fill_brewer(palette = "Reds", 
+                      guide = guide_legend(title = paste(bucket_name, "Buckets"))) + 
+    xlab(paste("Factor of", qual_name)) +
+    ylab(quant_name)
+  
+
+  grid.arrange(p1, p2, ncol = 1)
+}
+```
+
+
+```{r include=FALSE, smooth_scatter_function}
+smooth_scatter <- function(data_set, x_var, x_name, y_var, y_name, 
+                           legend_var, legend_name,
+                           brewer_palette, clean_out){
+  
+  # Setting the variables and new frame
+  x_var <- eval(substitute(x_var), data_set)
+  y_var <- eval(substitute(y_var), data_set)
+  legend_var <- eval(substitute(legend_var), data_set)
+  data_set.in <- data.frame(x_var, y_var, legend_var)
+  
+  if (clean_out) {
+  cleaned_message <- "- No Overall Outliers"  
+  
+  #OUTLIER DETECTION
+  x_var.above_out <- with(data_set.in, mean(x_var) + sd(x_var) * 3)
+  x_var.below_out <- with(data_set.in, mean(x_var) - sd(x_var) * 3)
+  
+  y_var.above_out <- with(data_set.in, mean(y_var) + sd(y_var) * 3)
+  y_var.below_out <- with(data_set.in, mean(y_var) - sd(y_var) * 3)
+  
+  data_set.in <- subset(data_set.in, 
+                        (x_var > x_var.below_out & x_var < x_var.above_out) & 
+                          (y_var > y_var.below_out & y_var < y_var.above_out))
+  } else {cleaned_message = ""}
+  
+  # Creates the muti variable scatterplot
+  ggplot(aes(x = x_var, y = y_var, color = factor(legend_var)), 
+         data = data_set.in) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, size = 1) +
+    scale_color_brewer(palette = brewer_palette, 
+                       guide = guide_legend(title = paste(legend_name, "Line"))) +
+    ggtitle(paste(y_name, "vs", x_name, "on", legend_name, cleaned_message)) +
+    xlab(x_name) + 
+    ylab(y_name)
+}
+```
+
+---
+
+### Quality, Alcohol, and Volatile Acidity
+
+```{r echo=FALSE, multivar_grid1}
+scat_boxplot_grid(wqr, quality, "Quality", 
+                  volatile.acidity, "Volatile Acidity", 
+                  alcohol, "Alcohol % by Volume", TRUE)
+```
+
+**Description**
+
+> In the jittered scatterplot, we see a positive trend between quality and alcohol but we cannot observe the volatility well due to overplotting. We already know that the relationship with quality is negative as we saw before.
+
+> Looking at the box plot, we can see a downward trend between quality and volatile acidity for each quartile bucket of alcohol % by volume. 
+
+> From here, I can see that high-quality red wines have low levels of volatile acidity on a median level. I can see that high alcohol levels have better quality also on a median level; we can corroborate the latter by looking at the scattered box plot below.
+
+> There is an issue with the quartile segmentation in the box plot above, which prevent us from comparing the distribution within the quality segments. If we see the distribution of quality 8 on the scattered box plot below, we see that there are not enough cases to provide an accurate quantile statistics for that quality rating. One suggestion is to increase the sample size to provide us with more cases under this segment. A drawback will be that quality rating 5 and 6 will be more overplotted assuming that the rest of the population is dense under these quality ratings. 
+
+
+```{r echo=FALSE, Bivariate_QualityAlcoholBox_clear}
+plot_box_jit(wqr, quality, "Quality", alcohol, "Alcohol % by Volume", TRUE)
+```
+
+*this is the same scatterplot under the bivariate section but with no overall outliers.
+
+---
+
+### Quality, Alcohol, and Sulphates
+
+```{r echo=FALSE, multivar_grid2}
+scat_boxplot_grid(wqr, wqr$quality, "Quality", 
+                  wqr$sulphates, "Sulphates", 
+                  wqr$alcohol, "Alcohol % by Volume", TRUE)
+```
+
+**Description**
+
+> In the above scatterplot, we can see the same relationship between quality and alcohol % by volume. We have the same issue as the volatile acidity with sulphates due to overplotting. But we already know that the relationship between quality and sulphates is slightly positive.
+
+> Looking at the box plot, we can tell that the relationship between quality and sulphates is positive in almost every quartile bucket of alcohol % by volume. However, we are faced with the same sample size issue in both quality rating 3 and 8; there is not enough data to compare the within quality rating distribution of sulphates.
+
+> Here there are many outliers within quality ratings and quartile alcohol % by volume buckets that are worth investigating further. I wonder how the sulphates actually affect the decision of the wine experts and if they are aware of the flavor changes specifically for red wine quality ratings of 5 and 6. 
+
+---
+
+### Multi-variable Scatterplot
+
+
+**Volatile Acidity(y) vs Alcohol(x) View**
+
+```{r echo=FALSE, multi_var_scatter1}
+smooth_scatter(wqr, alcohol, "Alcohol % by Volume", 
+               volatile.acidity, "Volatile Acidity",
+               quality, "Quality", 
+               "Dark2", FALSE)
+```
+
+```{r echo=FALSE, multi_var_scatter2}
+smooth_scatter(wqr, alcohol, "Alcohol % by Volume", 
+               volatile.acidity, "Volatile Acidity",
+               quality, "Quality", 
+               "Dark2", TRUE)
+```
+
+**Description**
+
+> In the above multiple-variable scatterplot, we can see the relationship between volatile acidity and alcohol % by volume on a categorical line legend.
+
+> The top graph shows the relationship including the overall outliers of all quantitative variables. The bottom graph shows the same relationship but without the outliers. The purpose is to see if the outliers change the structure of the graph. Indeed it does, but only slightly. The strongest noticeable change is in the quality rating number 4 line--from a positive trend, it goes to a slightly stagnant line, showing almost no relationship. 
+
+> By looking at the second graph (with no overall outliers), I can see that volatile acidity tends to not matter as much in quality ratings 3 and 8. However, this can be due to the sample issue mentioned before. Thre is just not enough cases under these quality ratings to have a more accurate representation of the trend.
+
+> In quality ratings 4 to 7, we can see that the lower the volatile acidity, the higher the rating is at any level of alcohol % by volume.
+
+---
+
+**Alcohol(y) vs Volatile Acidity(x) View**
+
+```{r echo=FALSE, multi_var_scatter3}
+smooth_scatter(wqr, volatile.acidity, "Volatile Acidity", 
+               alcohol, "Alcohol % by Volume",
+               quality, "Quality", 
+               "Dark2", TRUE)
+```
+
+**Description**
+
+> By reversing the previous multiple-variable scatterplot, we can appreciate the categorical relationship between quality and alcohol % by volume.
+
+> We can see the same possible issue with quality ratings 3 and 8. However, for quality ratings 4 to 7, we can tell that higher alcohol % by volume values tend to increase the quality rating of a red wine given by a wine expert. There is the exception of quality ratings 4 and 5, which are inverted. We can also see that at quality levels 4 and 6, with high levels of volatile acidity is harder to determine the quality of a red wine as it can be either or.
+
+
+```{r echo=FALSE, multi_var_scatter4}
+smooth_scatter(wqr, alcohol, "Alcohol % by Volume", 
+               sulphates, "Sulphates",
+               quality, "Quality", 
+               "Dark2", TRUE)
+```
+
+**Description**
+
+> Needless to say, we can see the horizontal pattern in the quality lines here as sulphates are correlated with quality at any level of alcohol.
+
+> To prove the concept, let us see an uncorrelated variable in the plot below. That is residual sugar.
+
+```{r echo=FALSE, multi_var_scatter5}
+smooth_scatter(wqr, alcohol, "Alcohol % by Volume", 
+               residual.sugar, "Residual Sugar",
+               quality, "Quality", 
+               "Dark2", TRUE)
+```
+
+> It is impossible to determine the quality of a red wine by using residual sugar at each level of alcohol % by volume. There too many competing values and the lines are more close to each other.
+
+---
+
+### Multiple Regression Model Statistics
+```{r multi-model_description, echo=FALSE}
+m1 <- lm(quality ~ alcohol, data = wqr)
+m2 <- update(m1, ~ . + volatile.acidity)
+m3 <- update(m2, ~ . + sulphates)
+
+mtable(m1, m2, m3)
+```
+
+**Multiple Regression Findings**
+
+> Attempting to increase the variability in quality ratings that can be explained by the model, we added volatile acidity and sulphates. The model increases its coefficient of determination to 33.5% from 22.7%, and it is still a valid model. However, without a variable that is more correlated to quality in clusters, there are low chances of increasing the predictability of quality.
+
+---
+
+# Multivariate Analysis
+
+> In this analysis, I corroborated that we should increase the size of the sample and get more wine expert ratings of red wines.
+
+> I also noticed that there is there are significant relationships with volatile acidity, alcohol, and sulphates and quality. We know that we can use these variables in the model to predict the quality of a wine base on wine expert grading. 
+
+
+### OPTIONAL:
+### Strengths and Limitations of Model.
+
+> The model above describes the relationship between quality and alcohol, volatile acidity and/or sulphates. The addition of sulphates to the model only adds 1% of the adjusted explanation of variability in quality using the full model with alcohol, volatile acidity, and sulphates. This model although strongly valid given by the high F-value and 0.00 p-value is very weak as a predictor of quality. I managed to fit the model a bit more from 23% to 33% (adjusted r-squared). However, it is still quite weak. Honestly, I would not use this model to predict the quality of a wine as it seems to me that the quality of a red wine is more subjective and slightly objective. We need more data, perhaps specific to preferences about expert giving the quality rating.
+
+---
+
+---
+
+# Final Plots and Summary
+
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+boxgram_grid(wqr, wqr$alcohol, 0.5, "Alcohol % by Volume")
+```
+
+### Description One
+
+> In this grid, I determined that there are possible outliers affecting the distribution of alcohol. The same graph was done for the rest of the potential variables, which led me to conclude that an outlier removal was necessary for this analysis as they are unlikely events in which the wine expert might have been biased when giving the quality rating. 
+
+---
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+plot_box_jit(wqr, quality, "Quality", alcohol, "Alcohol % by Volume", TRUE)
+```
+
+### Description Two
+
+> I ended up adding volatile acidity to the multivariate analysis because it gave me a promising correlation with quality. We can see that by looking at the middle box plot. The visual relationship agree with the -0.37 coefficient of correlation value when it was previously analyzed against quality using the pearson's method. 
+
+> I assumed that there was a categorical relationship between volatile acidity and quality, as well as sulphates and quality. We see that on each quality rating, there is a slight decrease in volatile acidity. Perhaps we can notice this trend better by doing a multiple-variable scatterplot and include sulphates as the gradient to see its density to attempt to identify density.
+
+---
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+
+smooth_scatter(wqr, volatile.acidity, "Volatile Acidity (g/dm^3)", 
+               alcohol, "Alcohol % by Volume",
+               quality, "Quality", 
+               "Dark2", TRUE)
+```
+
+### Description Three
+
+> Indeed, we can see the changes in alcohol % by volume on each quality rating for each continuous level of volatile acidity. And vice-versa we can see the changes in volatile acidity on each quality rating for each continuous level of alcohol % by volume. However, as I mentioned before there is an inverse relationship between quality rating 4 and 5, and there is a level of volatile acidity where the wine experts cant decide whether to choose a quality of 4 or 6. Perhaps we should investigate further with exploratory analysis to understand their choices.
+
+
+# Reflection
+  
+> After experimenting with the red wine dataset, I gain insight about the tendency to grade a red wine 5 or 6 out of 10. I also learned that wine experts have the tendency to grade good red wines when there is low volatile acidity. The same happens with alcohol but when it has high contents of percentage by volume, with the exception of alcohol % by volume levels of around 9.5 and 10.5, which is worth investigating. 
+
+> But I also learned that the limitations of the dataset due to privacy and logistics issues is detrimental to the exploratory analysis conducted here. My next step is to gather more variables such as grape types, wine brand, wine selling price, county of the wine made, year of the wine, etc. Also, we should investigate preferences of the wine experts grading the wines as well.
+
+> The reason of the density in quality 5 and alcohol % by volume of around 9 and 10 could be due to consumer preference, including many of those customers preferring higher alcohol contents on their red wine with an expert rating of 5. Perhaps these red wines are mid-priced as well. This is why I need more info about prices, etc. But to test my hypothesis of the density, I will need to do an experimental analysis on consumer preference to validate my claim. I would also do an observational study on consumer demand.
+
+> In addition, we need to increase the sample size to be able to compare values in quality ratings 3 and 8, which show a different pattern than the rest of the ratings. It seems that at these quality ratings, wine experts cannot determine if the quantity of alcohol or volatile acidity contribute to their choices for quality of a red wine. But there is not too much data under those ratings.
+
+> Another exploration is related to why these wine experts cannot decide whether a red wine with alcohol % by volume of around 10.3 and volatile acidity (g/dm^3) content of around 1.12 have a quality of 4 or 6. This is worth investigating further to understand the decision-making process of the wine experts and assess which other factors we should include in the analysis and future datasets.
+
+

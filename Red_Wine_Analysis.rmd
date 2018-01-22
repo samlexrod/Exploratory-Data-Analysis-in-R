@@ -7,25 +7,11 @@ The Red Wine Journey by Samuel Rodriguez
 ========================================================
   
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
-# Load all of the packages that you end up using in your analysis in this code
-# chunk.
 
-# Notice that the parameter "echo" was set to FALSE for this code chunk. This
-# prevents the code from displaying in the knitted HTML output. You should set
-# echo=FALSE for all code chunks in your file, unless it makes sense for your
-# report to show the code that generated a particular plot.
-
-# The other parameters for "message" and "warning" should also be set to FALSE
-# for other code chunks once you have verified that each plot comes out as you
-# want it to. This will clean up the flow of your report.
-
-#install.packages("ggplot2")
+# Install package if not already installed
 
 library(ggplot2)
-library(dplyr)
-library(tidyr)
 library(GGally)
-library(pastecs)
 library(memisc)
 library(gridExtra)
 library(Hmisc)
